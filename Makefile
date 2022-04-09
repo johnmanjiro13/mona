@@ -4,11 +4,12 @@ docker:
 run:
 	docker run --rm -it -v $(CURDIR):/mona -w /mona mona bash
 
-# They needs to run in the docker container.
+# For M1 Mac
 build:
-	cargo build
+	cargo build --target x86_64-unknown-linux-musl
 
-test: build
+# They needs to run in the docker container.
+test:
 	./test.sh
 
 clean:

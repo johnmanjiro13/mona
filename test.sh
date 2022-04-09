@@ -3,7 +3,7 @@ try() {
   expected="$1"
   input="$2"
 
-  ./target/debug/mona "$input" > tmp.s
+  ./target/x86_64-unknown-linux-musl/debug/mona "$input" > tmp.s
   gcc -static -o tmp tmp.s
   ./tmp
   actual="$?"
