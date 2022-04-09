@@ -1,5 +1,60 @@
 use std::{env, process};
 
+enum TokenType {
+    Num,
+}
+
+#[derive(Default, Debug)]
+struct Token {
+    ty: i32,
+    val: i32,
+    input: String,
+}
+
+fn tokenize(mut p: String) -> Vec<Token> {
+    let mut tokens: Vec<Token> = vec![];
+
+    let org = p.clone();
+    while let Some(c) = p.chars().next() {
+        if c.is_whitespace() {
+            p = p.split_off(1);
+            continue;
+        }
+
+        if c == '+' || c == '-' {
+            let token = Token {
+                ty: c as i32,
+                input: org.clone(),
+                ..Default::default()
+            };
+            p = p.split_off(1);
+            tokens.push(token);
+            continue;
+        }
+
+        if c.is_ascii_digit() {
+            let (n, remaining) = strtol(&p);
+            p = remaining;
+            let token = Token {
+                ty: TokenType::Num as i32,
+                input: org.clone(),
+                val: n.unwrap() as i32,
+            };
+            tokens.push(token);
+            continue;
+        }
+
+        eprintln!("cannot tokenize: {}", p);
+        process::exit(1);
+    }
+    tokens
+}
+
+fn fail(token: &Token) {
+    eprintln!("unexpected char: {:?}", token);
+    process::exit(1);
+}
+
 fn main() {
     let mut args = env::args();
 
@@ -8,34 +63,40 @@ fn main() {
         process::exit(1);
     }
 
-    let p = args.nth(1).unwrap();
+    let tokens = tokenize(args.nth(1).unwrap());
 
     println!(".intel_syntax noprefix");
     println!(".global main");
     println!("main:");
 
-    let (n, mut p) = strtol(&p);
-    println!("  mov rax, {}", n.unwrap());
+    if tokens[0].ty != TokenType::Num as i32 {
+        fail(&tokens[0]);
+    }
+    println!(" mov rax, {}", tokens[0].val);
 
-    while let Some(c) = p.chars().next() {
-        let s = p.split_off(1);
-
-        if c == '+' {
-            let (n, remaining) = strtol(&s);
-            p = remaining;
-            println!("  add rax, {}", n.unwrap());
+    let mut i = 1;
+    while i != tokens.len() {
+        if tokens[i].ty == '+' as i32 {
+            i += 1;
+            if tokens[i].ty != TokenType::Num as i32 {
+                fail(&tokens[i]);
+            }
+            println!("  add rax, {}", tokens[i].val);
+            i += 1;
             continue;
         }
 
-        if c == '-' {
-            let (n, remaining) = strtol(&s);
-            p = remaining;
-            println!("  sub rax, {}", n.unwrap());
+        if tokens[i].ty == '-' as i32 {
+            i += 1;
+            if tokens[i].ty != TokenType::Num as i32 {
+                fail(&tokens[i]);
+            }
+            println!("  sub rax, {}", tokens[i].val);
+            i += 1;
             continue;
         }
 
-        eprintln!("unexpected character: {}", p);
-        process::exit(1);
+        fail(&tokens[i]);
     }
 
     println!("  ret");
