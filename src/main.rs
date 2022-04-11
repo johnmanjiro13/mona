@@ -17,13 +17,13 @@ fn main() {
     // Tokenize and parse.
     let tokens = tokenize(args.nth(1).unwrap());
     let node = Node::parse(&tokens);
-    let irv = gen_ir(node);
-    let irv_allocated = alloc_regs(irv);
+    let mut irv = gen_ir(node);
+    alloc_regs(&mut irv);
 
     // Prologue
     println!(".intel_syntax noprefix");
     println!(".global main");
     println!("main:");
 
-    gen_x86(irv_allocated);
+    gen_x86(irv);
 }

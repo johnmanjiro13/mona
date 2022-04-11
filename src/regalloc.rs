@@ -48,9 +48,8 @@ fn kill(r: usize) {
     used_set(r, false);
 }
 
-pub fn alloc_regs(irv: Vec<IR>) -> Vec<IR> {
+pub fn alloc_regs(irv: &mut Vec<IR>) {
     use IRType::*;
-    let mut new: Vec<IR> = vec![];
     let irv_len = irv.len();
 
     *REG_MAP.lock().unwrap() = vec![None; irv_len];
@@ -58,8 +57,7 @@ pub fn alloc_regs(irv: Vec<IR>) -> Vec<IR> {
     for i in 0..irv_len {
         let mut ir = irv[i].clone();
         match ir.op {
-            IMM => ir.lhs = alloc(ir.lhs),
-            RETURN => kill(reg_map_get(ir.lhs).unwrap()),
+            IMM | RETURN => ir.lhs = alloc(ir.lhs),
             KILL => {
                 kill(reg_map_get(ir.lhs).unwrap());
                 ir.op = IRType::NOP;
@@ -70,7 +68,6 @@ pub fn alloc_regs(irv: Vec<IR>) -> Vec<IR> {
             }
             op => panic!("unknown operator: {:?}", op),
         }
-        new.push(ir);
+        irv[i] = ir;
     }
-    new
 }
