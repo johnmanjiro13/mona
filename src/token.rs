@@ -14,7 +14,6 @@ pub enum TokenType {
 impl From<char> for TokenType {
     fn from(c: char) -> Self {
         match c {
-            '+' => TokenType::Plus,
             '-' => TokenType::Minus,
             '*' => TokenType::Mul,
             '/' => TokenType::Div,
@@ -28,6 +27,7 @@ impl From<char> for TokenType {
 impl From<String> for TokenType {
     fn from(s: String) -> Self {
         match &*s {
+            "(´∀｀)" => TokenType::Plus,
             "return" => TokenType::Return,
             name => TokenType::Ident(name.to_string()),
         }
@@ -65,11 +65,26 @@ pub fn scan(mut p: String) -> Vec<Token> {
         }
 
         // Identifier
-        if c.is_alphabetic() || c == '_' {
+        if c.is_alphabetic()
+            || c == '_'
+            || c == '('
+            || c == '´'
+            || c == '∀'
+            || c == '｀'
+            || c == ')'
+        {
             let mut name = String::new();
             while let Some(c2) = p.chars().next() {
-                if c2.is_alphabetic() || c2.is_ascii_digit() || c2 == '_' {
-                    p = p.split_off(1);
+                if c2.is_alphabetic()
+                    || c2.is_ascii_digit()
+                    || c2 == '_'
+                    || c2 == '('
+                    || c2 == '´'
+                    || c2 == '∀'
+                    || c2 == '｀'
+                    || c2 == ')'
+                {
+                    p = p.split_off(c2.len_utf8());
                     name.push(c2);
                     continue;
                 }
