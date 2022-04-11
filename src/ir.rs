@@ -15,18 +15,19 @@ lazy_static! {
 
 #[derive(Debug, Clone)]
 pub enum IRType {
-    IMM,
-    MOV,
-    ADD(Option<usize>), // If it is Some, it is imm.
-    SUB,
-    MUL,
-    DIV,
-    RETURN,
-    ALLOCA,
-    LOAD,
-    STORE,
-    KILL,
-    NOP,
+    Imm,
+    Mov,
+    Add,
+    AddImm,
+    Sub,
+    Mul,
+    Div,
+    Return,
+    Alloca,
+    Load,
+    Store,
+    Kill,
+    Nop,
 }
 
 impl From<NodeType> for IRType {
@@ -41,10 +42,10 @@ impl From<NodeType> for IRType {
 impl From<TokenType> for IRType {
     fn from(t: TokenType) -> Self {
         match t {
-            TokenType::Plus => IRType::ADD(None),
-            TokenType::Minus => IRType::SUB,
-            TokenType::Mul => IRType::MUL,
-            TokenType::Div => IRType::DIV,
+            TokenType::Plus => IRType::Add,
+            TokenType::Minus => IRType::Sub,
+            TokenType::Mul => IRType::Mul,
+            TokenType::Div => IRType::Div,
             e => panic!("cannot convert: {:?}", e),
         }
     }
@@ -74,9 +75,9 @@ fn gen_lval(code: &mut Vec<IR>, node: Node) -> Option<usize> {
             }
             let r = Some(*REGNO.lock().unwrap());
             *REGNO.lock().unwrap() += 1;
-            let off = Some(*VARS.lock().unwrap().get(&name).unwrap());
-            code.push(IR::new(IRType::MOV, r, Some(*BASE_REG.lock().unwrap())));
-            code.push(IR::new(IRType::ADD(off), r, None));
+            let off = *VARS.lock().unwrap().get(&name).unwrap();
+            code.push(IR::new(IRType::Mov, r, Some(*BASE_REG.lock().unwrap())));
+            code.push(IR::new(IRType::AddImm, r, Some(off)));
 
             r
         }
@@ -89,27 +90,27 @@ fn gen_expr(code: &mut Vec<IR>, node: Node) -> Option<usize> {
         NodeType::Num(val) => {
             let r = Some(*REGNO.lock().unwrap());
             *REGNO.lock().unwrap() += 1;
-            code.push(IR::new(IRType::IMM, r, Some(val as usize)));
+            code.push(IR::new(IRType::Imm, r, Some(val as usize)));
             r
         }
         NodeType::Ident(_) => {
             let r = gen_lval(code, node);
-            code.push(IR::new(IRType::LOAD, r, r));
+            code.push(IR::new(IRType::Load, r, r));
             r
         }
         NodeType::BinOp(op, lhs, rhs) => match op {
             TokenType::Equal => {
                 let rhs = gen_expr(code, *rhs);
                 let lhs = gen_lval(code, *lhs);
-                code.push(IR::new(IRType::STORE, lhs, rhs));
-                code.push(IR::new(IRType::KILL, rhs, None));
+                code.push(IR::new(IRType::Store, lhs, rhs));
+                code.push(IR::new(IRType::Kill, rhs, None));
                 lhs
             }
             _ => {
                 let lhs = gen_expr(code, *lhs);
                 let rhs = gen_expr(code, *rhs);
                 code.push(IR::new(IRType::from(op), lhs, rhs));
-                code.push(IR::new(IRType::KILL, rhs, None));
+                code.push(IR::new(IRType::Kill, rhs, None));
                 lhs
             }
         },
@@ -121,12 +122,12 @@ fn gen_stmt(code: &mut Vec<IR>, node: Node) {
     match node.ty {
         NodeType::Return(expr) => {
             let r = gen_expr(code, *expr);
-            code.push(IR::new(IRType::RETURN, r, None));
-            code.push(IR::new(IRType::KILL, r, None));
+            code.push(IR::new(IRType::Return, r, None));
+            code.push(IR::new(IRType::Kill, r, None));
         }
         NodeType::ExprStmt(expr) => {
             let r = gen_expr(code, *expr);
-            code.push(IR::new(IRType::KILL, r, None));
+            code.push(IR::new(IRType::Kill, r, None));
         }
         NodeType::CompStmt(stmts) => {
             for n in stmts {
@@ -141,12 +142,12 @@ pub fn gen_ir(node: Node) -> Vec<IR> {
     let mut code = vec![];
 
     code.push(IR::new(
-        IRType::ALLOCA,
+        IRType::Alloca,
         Some(*BASE_REG.lock().unwrap()),
         None,
     ));
     gen_stmt(&mut code, node);
     code[0].rhs = Some(*BPOFF.lock().unwrap());
-    code.push(IR::new(IRType::KILL, Some(*BASE_REG.lock().unwrap()), None));
+    code.push(IR::new(IRType::Kill, Some(*BASE_REG.lock().unwrap()), None));
     code
 }
