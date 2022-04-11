@@ -2,22 +2,16 @@ use std::sync::Mutex;
 
 use lazy_static::lazy_static;
 
-use crate::ir::{IRType, IR};
+use crate::ir::{IROp, IR};
 use crate::REGS;
 
 lazy_static! {
     static ref N: Mutex<usize> = Mutex::new(0);
 }
 
-fn gen_label() -> String {
-    let label = format!(".L{}", *N.lock().unwrap());
-    *N.lock().unwrap() += 1;
-    label
-}
-
 pub fn gen_x86(irv: Vec<IR>) {
-    use IRType::*;
-    let ret = gen_label();
+    use IROp::*;
+    let ret = ".Lend";
 
     println!("  push rbp");
     println!("  mov rbp, rsp");
@@ -30,6 +24,11 @@ pub fn gen_x86(irv: Vec<IR>) {
             Return => {
                 println!("  mov rax, {}", REGS[lhs]);
                 println!("  jmp {}", ret);
+            }
+            Label => println!(".L{}:", lhs),
+            Unless => {
+                println!("  cmp {}, 0", REGS[lhs]);
+                println!("  je .L{}", ir.rhs.unwrap());
             }
             Alloca => {
                 if ir.rhs.is_some() {

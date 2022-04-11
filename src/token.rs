@@ -6,6 +6,7 @@ pub enum TokenType {
     Minus,         // -
     Mul,           // *
     Div,           // /
+    If,            // if
     Return,        // return
     Semicolon,     // ;
     LeftParen,     // ()
@@ -34,6 +35,7 @@ impl From<String> for TokenType {
     fn from(s: String) -> Self {
         match &*s {
             "return" => TokenType::Return,
+            "if" => TokenType::If,
             name => TokenType::Ident(name.to_string()),
         }
     }
