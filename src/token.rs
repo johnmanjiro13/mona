@@ -65,25 +65,29 @@ pub fn scan(mut p: String) -> Vec<Token> {
         }
 
         // Identifier
-        if c.is_alphabetic()
-            || c == '_'
-            || c == '('
-            || c == '´'
-            || c == '∀'
-            || c == '｀'
-            || c == ')'
-        {
+        if c.is_alphabetic() {
             let mut name = String::new();
             while let Some(c2) = p.chars().next() {
-                if c2.is_alphabetic()
-                    || c2.is_ascii_digit()
-                    || c2 == '_'
-                    || c2 == '('
-                    || c2 == '´'
-                    || c2 == '∀'
-                    || c2 == '｀'
-                    || c2 == ')'
-                {
+                if c2.is_alphabetic() || c2.is_ascii_digit() {
+                    p = p.split_off(c2.len_utf8());
+                    name.push(c2);
+                    continue;
+                }
+                break;
+            }
+            let token = Token {
+                ty: TokenType::from(name),
+                input: org.clone(),
+            };
+            tokens.push(token);
+            continue;
+        }
+
+        // mona
+        if c == '(' {
+            let mut name = String::new();
+            while let Some(c2) = p.chars().next() {
+                if mona_contains(c2) {
                     p = p.split_off(c2.len_utf8());
                     name.push(c2);
                     continue;
@@ -115,6 +119,10 @@ pub fn scan(mut p: String) -> Vec<Token> {
 
 pub fn tokenize(p: String) -> Vec<Token> {
     scan(p)
+}
+
+fn mona_contains(c: char) -> bool {
+    "(´∀｀)".contains(c)
 }
 
 fn strtol(s: &mut String) -> Option<i64> {
