@@ -14,7 +14,6 @@ pub enum TokenType {
 impl From<char> for TokenType {
     fn from(c: char) -> Self {
         match c {
-            '-' => TokenType::Minus,
             '*' => TokenType::Mul,
             '/' => TokenType::Div,
             ';' => TokenType::Semicolon,
@@ -28,7 +27,8 @@ impl From<String> for TokenType {
     fn from(s: String) -> Self {
         match &*s {
             "(´∀｀)" => TokenType::Plus,
-            "return" => TokenType::Return,
+            "(・∀・)" => TokenType::Minus,
+            "(,,ﾟДﾟ)" => TokenType::Return,
             name => TokenType::Ident(name.to_string()),
         }
     }
@@ -87,7 +87,7 @@ pub fn scan(mut p: String) -> Vec<Token> {
         if c == '(' {
             let mut name = String::new();
             while let Some(c2) = p.chars().next() {
-                if mona_contains(c2) {
+                if mona_contains(c2) || moraler_contains(c2) || giko_contains(c2) {
                     p = p.split_off(c2.len_utf8());
                     name.push(c2);
                     continue;
@@ -123,6 +123,14 @@ pub fn tokenize(p: String) -> Vec<Token> {
 
 fn mona_contains(c: char) -> bool {
     "(´∀｀)".contains(c)
+}
+
+fn moraler_contains(c: char) -> bool {
+    "(・∀・)".contains(c)
+}
+
+fn giko_contains(c: char) -> bool {
+    "(,,ﾟДﾟ)".contains(c)
 }
 
 fn strtol(s: &mut String) -> Option<i64> {

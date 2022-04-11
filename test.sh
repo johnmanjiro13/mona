@@ -17,7 +17,7 @@ try() {
 }
 
 # add, sub
-try 9 'return 5 (´∀｀) 4;'
+try 11 '(,,ﾟДﾟ) 5(´∀｀) 10 (・∀・)4;'
 # try 0 'return 0;'
 # try 42 'return 42;'
 # try 21 'return 5+20-4;'
