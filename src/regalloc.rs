@@ -57,14 +57,14 @@ pub fn alloc_regs(irv: &mut Vec<IR>) {
     for i in 0..irv_len {
         let mut ir = irv[i].clone();
         match ir.op {
-            IMM | RETURN => ir.lhs = alloc(ir.lhs),
-            KILL => {
-                kill(reg_map_get(ir.lhs).unwrap());
-                ir.op = IRType::NOP;
+            IMM | RETURN | ALLOCA => ir.lhs = Some(alloc(ir.lhs.unwrap())),
+            MOV | LOAD | STORE | ADD | SUB | MUL | DIV => {
+                ir.lhs = Some(alloc(ir.lhs.unwrap()));
+                ir.rhs = Some(alloc(ir.rhs.unwrap()));
             }
-            ADD | SUB | MUL | DIV | MOV => {
-                ir.lhs = alloc(ir.lhs);
-                ir.rhs = alloc(ir.rhs);
+            KILL => {
+                kill(reg_map_get(ir.lhs.unwrap()).unwrap());
+                ir.op = IRType::NOP;
             }
             op => panic!("unknown operator: {:?}", op),
         }

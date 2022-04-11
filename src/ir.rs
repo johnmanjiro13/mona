@@ -1,17 +1,32 @@
+use core::panic;
+use std::{collections::HashMap, sync::Mutex};
+
+use lazy_static::lazy_static;
+
 use crate::parse::{Node, NodeType};
 use crate::token::TokenType;
+
+lazy_static! {
+    static ref VARS: Mutex<HashMap<String, usize>> = Mutex::new(HashMap::new());
+    static ref REGNO: Mutex<usize> = Mutex::new(1);
+    static ref BASE_REG: Mutex<usize> = Mutex::new(0);
+    static ref BPOFF: Mutex<usize> = Mutex::new(0);
+}
 
 #[derive(Debug, Clone)]
 pub enum IRType {
     IMM,
     MOV,
-    RETURN,
-    KILL,
-    NOP,
     ADD,
     SUB,
     MUL,
     DIV,
+    RETURN,
+    ALLOCA,
+    LOAD,
+    STORE,
+    KILL,
+    NOP,
 }
 
 impl From<NodeType> for IRType {
@@ -38,30 +53,70 @@ impl From<TokenType> for IRType {
 #[derive(Clone)]
 pub struct IR {
     pub op: IRType,
-    pub lhs: usize,
-    pub rhs: usize,
+    pub lhs: Option<usize>,
+    pub rhs: Option<usize>,
 }
 
 impl IR {
-    fn new(op: IRType, lhs: usize, rhs: usize) -> Self {
+    fn new(op: IRType, lhs: Option<usize>, rhs: Option<usize>) -> Self {
         Self { op, lhs, rhs }
     }
 }
 
-fn gen_expr(code: &mut Vec<IR>, node: Node) -> usize {
+fn gen_lval(code: &mut Vec<IR>, node: Node) -> Option<usize> {
+    match node.ty {
+        NodeType::Ident(name) => {
+            if VARS.lock().unwrap().get(&name).is_none() {
+                VARS.lock()
+                    .unwrap()
+                    .insert(name.to_string(), *BPOFF.lock().unwrap());
+                *BPOFF.lock().unwrap() += 8;
+            }
+            let r1 = Some(*REGNO.lock().unwrap());
+            *REGNO.lock().unwrap() += 1;
+            let off = Some(*VARS.lock().unwrap().get(&name).unwrap());
+            code.push(IR::new(IRType::MOV, r1, Some(*BASE_REG.lock().unwrap())));
+
+            let r2 = Some(*REGNO.lock().unwrap());
+            *REGNO.lock().unwrap() += 1;
+            code.push(IR::new(IRType::IMM, r2, off));
+            code.push(IR::new(IRType::ADD, r1, r2));
+            code.push(IR::new(IRType::KILL, r2, None));
+            r1
+        }
+        _ => panic!("not a local value"),
+    }
+}
+
+fn gen_expr(code: &mut Vec<IR>, node: Node) -> Option<usize> {
     match node.ty {
         NodeType::Num(val) => {
-            let r = code.len();
-            code.push(IR::new(IRType::IMM, r, val as usize));
+            let r = Some(*REGNO.lock().unwrap());
+            *REGNO.lock().unwrap() += 1;
+            code.push(IR::new(IRType::IMM, r, Some(val as usize)));
             r
         }
-        NodeType::BinOp(op, lhs, rhs) => {
-            let lhs = gen_expr(code, *lhs);
-            let rhs = gen_expr(code, *rhs);
-            code.push(IR::new(IRType::from(op), lhs, rhs));
-            code.push(IR::new(IRType::KILL, rhs, 0));
-            lhs
+        NodeType::Ident(_) => {
+            let r = gen_lval(code, node);
+            code.push(IR::new(IRType::LOAD, r, r));
+            r
         }
+        NodeType::BinOp(op, lhs, rhs) => match op {
+            TokenType::Equal => {
+                let rhs = gen_expr(code, *rhs);
+                let lhs = gen_lval(code, *lhs);
+                code.push(IR::new(IRType::STORE, lhs, rhs));
+                code.push(IR::new(IRType::KILL, rhs, None));
+                lhs
+            }
+            _ => {
+                let lhs = gen_expr(code, *lhs);
+                let rhs = gen_expr(code, *rhs);
+                code.push(IR::new(IRType::from(op), lhs, rhs));
+                code.push(IR::new(IRType::KILL, rhs, None));
+                lhs
+            }
+        },
         _ => unreachable!(),
     }
 }
@@ -70,12 +125,12 @@ fn gen_stmt(code: &mut Vec<IR>, node: Node) {
     match node.ty {
         NodeType::Return(expr) => {
             let r = gen_expr(code, *expr);
-            code.push(IR::new(IRType::RETURN, r, 0));
-            code.push(IR::new(IRType::KILL, r, 0));
+            code.push(IR::new(IRType::RETURN, r, None));
+            code.push(IR::new(IRType::KILL, r, None));
         }
         NodeType::ExprStmt(expr) => {
             let r = gen_expr(code, *expr);
-            code.push(IR::new(IRType::KILL, r, 0));
+            code.push(IR::new(IRType::KILL, r, None));
         }
         NodeType::CompStmt(stmts) => {
             for n in stmts {
@@ -88,6 +143,14 @@ fn gen_stmt(code: &mut Vec<IR>, node: Node) {
 
 pub fn gen_ir(node: Node) -> Vec<IR> {
     let mut code = vec![];
+
+    code.push(IR::new(
+        IRType::ALLOCA,
+        Some(*BASE_REG.lock().unwrap()),
+        None,
+    ));
     gen_stmt(&mut code, node);
+    code[0].rhs = Some(*BPOFF.lock().unwrap());
+    code.push(IR::new(IRType::KILL, Some(*BASE_REG.lock().unwrap()), None));
     code
 }
