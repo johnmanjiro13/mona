@@ -29,7 +29,12 @@ impl From<String> for TokenType {
             "(´∀｀)" => TokenType::Plus,
             "(・∀・)" => TokenType::Minus,
             "(,,ﾟДﾟ)" => TokenType::Return,
-            name => TokenType::Ident(name.to_string()),
+            name => {
+                if !name.chars().next().unwrap().is_alphabetic() {
+                    panic!("variable can use only alphabets: {}", name);
+                }
+                TokenType::Ident(name.to_string())
+            }
         }
     }
 }
