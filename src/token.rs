@@ -2,24 +2,29 @@
 pub enum TokenType {
     Num(i32),      // Number literal
     Ident(String), // Identifier
-    Plus,
-    Minus,
-    Mul,
-    Div,
-    Return,
-    Semicolon,
-    Equal,
+    Plus,          // +
+    Minus,         // -
+    Mul,           // *
+    Div,           // /
+    Return,        // return
+    Semicolon,     // ;
+    LeftParen,     // ()
+    RightParen,    // )
+    Equal,         // =
 }
 
 impl From<char> for TokenType {
     fn from(c: char) -> Self {
+        use TokenType::*;
         match c {
-            '+' => TokenType::Plus,
-            '-' => TokenType::Minus,
-            '*' => TokenType::Mul,
-            '/' => TokenType::Div,
-            ';' => TokenType::Semicolon,
-            '=' => TokenType::Equal,
+            '+' => Plus,
+            '-' => Minus,
+            '*' => Mul,
+            '/' => Div,
+            ';' => Semicolon,
+            '=' => Equal,
+            '(' => LeftParen,
+            ')' => RightParen,
             e => panic!("unknown token type: {}", e),
         }
     }
@@ -52,7 +57,7 @@ pub fn scan(mut p: String) -> Vec<Token> {
 
         // Single-letter tokens
         match c {
-            '+' | '-' | '*' | '/' | ';' | '=' => {
+            '+' | '-' | '*' | '/' | ';' | '=' | '(' | ')' => {
                 let token = Token {
                     ty: TokenType::from(c),
                     input: org.clone(),

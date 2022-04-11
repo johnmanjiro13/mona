@@ -34,4 +34,7 @@ try 9 'return 6*3/2;'
 try 2 'a=2; return a;'
 try 10 'a=2; b=3+2; return a*b;'
 
+# ()
+try 45 'return (2+3)*(4+5);'
+
 echo OK

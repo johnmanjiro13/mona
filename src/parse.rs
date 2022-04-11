@@ -1,5 +1,12 @@
 use crate::token::{Token, TokenType};
 
+fn expect(t: &Token, ty: TokenType, pos: &mut usize) {
+    if t.ty != ty {
+        panic!("expected {:?} but got {:?} at {}", ty, t.ty, *pos);
+    }
+    *pos += 1;
+}
+
 fn consume(tokens: &Vec<Token>, ty: TokenType, pos: &mut usize) -> bool {
     let t = &tokens[*pos];
     if t.ty != ty {
@@ -35,6 +42,11 @@ impl Node {
         match t.ty {
             TokenType::Num(val) => Self::new(NodeType::Num(val)),
             TokenType::Ident(ref name) => Self::new(NodeType::Ident(name.to_string())),
+            TokenType::LeftParen => {
+                let node = Self::assign(tokens, pos);
+                expect(&tokens[*pos], TokenType::RightParen, pos);
+                node
+            }
             _ => panic!("number expected, but got {}", t.input),
         }
     }
@@ -110,8 +122,7 @@ impl Node {
                 }
             };
             stmt.push(e);
-            matches!(tokens[*pos].ty, TokenType::Semicolon);
-            *pos += 1;
+            expect(&tokens[*pos], TokenType::Semicolon, pos);
         }
     }
 
