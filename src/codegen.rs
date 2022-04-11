@@ -18,6 +18,12 @@ pub fn gen_x86(irv: Vec<IR>) {
                 println!("  mul {}", REGS[ir.lhs]);
                 println!("  mov {}, rax", REGS[ir.lhs]);
             }
+            DIV => {
+                println!("  mov rax, {}", REGS[ir.lhs]);
+                println!("  cqo");
+                println!("  div {}", REGS[ir.rhs]);
+                println!("  mov {}, rax", REGS[ir.lhs]);
+            }
             NOP | KILL => (),
         }
     }

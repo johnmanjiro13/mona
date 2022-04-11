@@ -6,6 +6,7 @@ pub enum NodeType {
     Plus,
     Minus,
     Mul,
+    Div,
 }
 
 impl From<TokenType> for NodeType {
@@ -15,6 +16,7 @@ impl From<TokenType> for NodeType {
             TokenType::Plus => NodeType::Plus,
             TokenType::Minus => NodeType::Minus,
             TokenType::Mul => NodeType::Mul,
+            TokenType::Div => NodeType::Div,
         }
     }
 }
@@ -69,7 +71,7 @@ impl Node {
             }
 
             let op = tokens[pos].ty.clone();
-            if op != TokenType::Mul {
+            if op != TokenType::Mul && op != TokenType::Div {
                 return (lhs, pos);
             }
             pos += 1;

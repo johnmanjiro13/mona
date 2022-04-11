@@ -64,7 +64,7 @@ pub fn alloc_regs(irv: Vec<IR>) -> Vec<IR> {
                 kill(reg_map_get(ir.lhs).unwrap());
                 ir.op = IRType::NOP;
             }
-            ADD | SUB | MUL | MOV => {
+            ADD | SUB | MUL | DIV | MOV => {
                 ir.lhs = alloc(ir.lhs);
                 ir.rhs = alloc(ir.rhs);
             }
