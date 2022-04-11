@@ -17,7 +17,7 @@ lazy_static! {
 pub enum IRType {
     IMM,
     MOV,
-    ADD,
+    ADD(Option<usize>), // If it is Some, it is imm.
     SUB,
     MUL,
     DIV,
@@ -41,7 +41,7 @@ impl From<NodeType> for IRType {
 impl From<TokenType> for IRType {
     fn from(t: TokenType) -> Self {
         match t {
-            TokenType::Plus => IRType::ADD,
+            TokenType::Plus => IRType::ADD(None),
             TokenType::Minus => IRType::SUB,
             TokenType::Mul => IRType::MUL,
             TokenType::Div => IRType::DIV,
@@ -72,17 +72,13 @@ fn gen_lval(code: &mut Vec<IR>, node: Node) -> Option<usize> {
                     .insert(name.to_string(), *BPOFF.lock().unwrap());
                 *BPOFF.lock().unwrap() += 8;
             }
-            let r1 = Some(*REGNO.lock().unwrap());
+            let r = Some(*REGNO.lock().unwrap());
             *REGNO.lock().unwrap() += 1;
             let off = Some(*VARS.lock().unwrap().get(&name).unwrap());
-            code.push(IR::new(IRType::MOV, r1, Some(*BASE_REG.lock().unwrap())));
+            code.push(IR::new(IRType::MOV, r, Some(*BASE_REG.lock().unwrap())));
+            code.push(IR::new(IRType::ADD(off), r, None));
 
-            let r2 = Some(*REGNO.lock().unwrap());
-            *REGNO.lock().unwrap() += 1;
-            code.push(IR::new(IRType::IMM, r2, off));
-            code.push(IR::new(IRType::ADD, r1, r2));
-            code.push(IR::new(IRType::KILL, r2, None));
-            r1
+            r
         }
         _ => panic!("not a local value"),
     }

@@ -39,7 +39,10 @@ pub fn gen_x86(irv: Vec<IR>) {
             }
             LOAD => println!("  mov {}, [{}]", REGS[lhs], REGS[ir.rhs.unwrap()]),
             STORE => println!("  mov [{}], {}", REGS[lhs], REGS[ir.rhs.unwrap()]),
-            ADD => println!("  add {}, {}", REGS[lhs], REGS[ir.rhs.unwrap()]),
+            ADD(imm) => match imm {
+                Some(val) => println!("  add {}, {}", REGS[lhs], val),
+                None => println!("  add {}, {}", REGS[lhs], REGS[ir.rhs.unwrap()]),
+            },
             SUB => println!("  sub {}, {}", REGS[lhs], REGS[ir.rhs.unwrap()]),
             MUL => {
                 println!("  mov rax, {}", REGS[ir.rhs.unwrap()]);
