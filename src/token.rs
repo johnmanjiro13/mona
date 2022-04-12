@@ -7,6 +7,7 @@ pub enum TokenType {
     Mul,           // *
     Div,           // /
     If,            // if
+    Else,          // else
     Return,        // return
     Semicolon,     // ;
     LeftParen,     // ()
@@ -36,6 +37,7 @@ impl From<String> for TokenType {
         match &*s {
             "return" => TokenType::Return,
             "if" => TokenType::If,
+            "else" => TokenType::Else,
             name => TokenType::Ident(name.to_string()),
         }
     }

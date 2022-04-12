@@ -1,13 +1,5 @@
-use std::sync::Mutex;
-
-use lazy_static::lazy_static;
-
 use crate::ir::{IROp, IR};
 use crate::REGS;
-
-lazy_static! {
-    static ref N: Mutex<usize> = Mutex::new(0);
-}
 
 pub fn gen_x86(irv: Vec<IR>) {
     use IROp::*;
@@ -26,6 +18,7 @@ pub fn gen_x86(irv: Vec<IR>) {
                 println!("  jmp {}", ret);
             }
             Label => println!(".L{}:", lhs),
+            Jmp => println!("  jmp .L{}", lhs),
             Unless => {
                 println!("  cmp {}, 0", REGS[lhs]);
                 println!("  je .L{}", ir.rhs.unwrap());

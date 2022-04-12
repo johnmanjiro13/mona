@@ -41,4 +41,8 @@ try 45 'return (2+3)*(4+5);'
 try 2 'if (1) return 2; return 3;'
 try 3 'if (0) return 2; return 3;'
 
+# if else
+try 2 'if (1) return 2; else return 3;'
+try 3 'if (0) return 2; else return 3;'
+
 echo OK
